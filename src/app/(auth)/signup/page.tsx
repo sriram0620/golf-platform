@@ -35,6 +35,7 @@ function SignupForm() {
       const res = await fetch('/api/auth/signup', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify(data),
       })
       const json = await res.json()
@@ -47,6 +48,7 @@ function SignupForm() {
       await fetch('/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({ email: data.email, password: data.password }),
       })
 

@@ -2,6 +2,7 @@ import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import { Navbar } from '@/components/layout/navbar'
 import { DashboardSidebar } from '@/components/layout/dashboard-sidebar'
+import { navbarProfileFromAuthUser } from '@/lib/navbar-profile'
 
 export const dynamic = 'force-dynamic'
 
@@ -10,11 +11,13 @@ export default async function DashboardLayout({ children }: { children: React.Re
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 
-  const { data: profile } = await supabase
+  const { data: row } = await supabase
     .from('profiles')
     .select('*')
     .eq('id', user.id)
-    .single()
+    .maybeSingle()
+
+  const profile = navbarProfileFromAuthUser(user, row)
 
   return (
     <div className="min-h-screen flex flex-col">

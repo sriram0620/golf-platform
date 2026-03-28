@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
+import { navbarProfileFromAuthUser } from '@/lib/navbar-profile'
 import { ok, unauthorized, serverError } from '@/lib/api-response'
 
 export async function GET() {
@@ -7,11 +8,13 @@ export async function GET() {
     const { data: { user }, error } = await supabase.auth.getUser()
     if (error || !user) return unauthorized()
 
-    const { data: profile } = await supabase
+    const { data: row } = await supabase
       .from('profiles')
       .select('*')
       .eq('id', user.id)
-      .single()
+      .maybeSingle()
+
+    const profile = navbarProfileFromAuthUser(user, row)
 
     return ok({ profile })
   } catch {

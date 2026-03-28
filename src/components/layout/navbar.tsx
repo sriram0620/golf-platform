@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { useRouter, usePathname } from 'next/navigation'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Menu, X, Trophy, ChevronDown, LogOut, LayoutDashboard, Settings, Shield } from 'lucide-react'
 import type { Profile } from '@/types'
@@ -11,14 +11,45 @@ interface NavbarProps {
   profile?: Profile | null
 }
 
-export function Navbar({ profile }: NavbarProps) {
+export function Navbar({ profile: profileFromServer }: NavbarProps) {
   const [mobileOpen, setMobileOpen] = useState(false)
   const [userMenuOpen, setUserMenuOpen] = useState(false)
+  const [profile, setProfile] = useState<Profile | null>(profileFromServer ?? null)
+  /** False until we know from server prop or /api/auth/me whether the user is a guest. */
+  const [authReady, setAuthReady] = useState(!!profileFromServer)
   const router = useRouter()
   const pathname = usePathname()
 
+  useEffect(() => {
+    const next = profileFromServer ?? null
+    setProfile(next)
+    setAuthReady(!!profileFromServer)
+  }, [profileFromServer])
+
+  useEffect(() => {
+    if (authReady) return
+    let cancelled = false
+    fetch('/api/auth/me', { credentials: 'include', cache: 'no-store' })
+      .then(async (res) => {
+        if (cancelled) return
+        if (res.ok) {
+          const json = await res.json()
+          if (json.data?.profile) setProfile(json.data.profile)
+        }
+        setAuthReady(true)
+      })
+      .catch(() => {
+        if (!cancelled) setAuthReady(true)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [authReady])
+
   const handleLogout = async () => {
-    await fetch('/api/auth/logout', { method: 'POST' })
+    await fetch('/api/auth/logout', { method: 'POST', credentials: 'include' })
+    setProfile(null)
+    setAuthReady(true)
     router.push('/')
     router.refresh()
   }
@@ -62,7 +93,12 @@ export function Navbar({ profile }: NavbarProps) {
 
           {/* Right side */}
           <div className="hidden md:flex items-center gap-3">
-            {profile ? (
+            {!authReady ? (
+              <div className="flex items-center gap-3">
+                <div className="h-9 w-20 rounded-lg bg-white/[0.06] animate-pulse" aria-hidden />
+                <div className="h-9 w-24 rounded-lg bg-white/[0.06] animate-pulse" aria-hidden />
+              </div>
+            ) : profile ? (
               <div className="relative">
                 <button
                   onClick={() => setUserMenuOpen(!userMenuOpen)}
@@ -139,7 +175,12 @@ export function Navbar({ profile }: NavbarProps) {
                 {link.label}
               </Link>
             ))}
-            {profile ? (
+            {!authReady ? (
+              <div className="space-y-2 pt-2">
+                <div className="h-10 rounded-lg bg-white/[0.06] animate-pulse" aria-hidden />
+                <div className="h-10 rounded-lg bg-white/[0.06] animate-pulse" aria-hidden />
+              </div>
+            ) : profile ? (
               <>
                 <Link href="/dashboard" className="block px-3 py-2.5 rounded-lg text-sm text-slate-300 hover:bg-white/5" onClick={() => setMobileOpen(false)}>Dashboard</Link>
                 {profile.role === 'admin' && <Link href="/admin" className="block px-3 py-2.5 rounded-lg text-sm text-purple-400 hover:bg-white/5" onClick={() => setMobileOpen(false)}>Admin Panel</Link>}

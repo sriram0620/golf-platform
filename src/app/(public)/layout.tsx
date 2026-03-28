@@ -1,5 +1,8 @@
 import { Navbar } from '@/components/layout/navbar'
 import { createClient } from '@/lib/supabase/server'
+import { navbarProfileFromAuthUser } from '@/lib/navbar-profile'
+
+export const dynamic = 'force-dynamic'
 
 export default async function PublicLayout({ children }: { children: React.ReactNode }) {
   const supabase = await createClient()
@@ -7,9 +10,8 @@ export default async function PublicLayout({ children }: { children: React.React
 
   let profile = null
   if (user) {
-    const { data } = await supabase.from('profiles').select('*').eq('id', user.id).single()
-    // Always pass an object if user is logged in
-    profile = data || { id: user.id, email: user.email, full_name: user.email?.split('@')[0] }
+    const { data: row } = await supabase.from('profiles').select('*').eq('id', user.id).maybeSingle()
+    profile = navbarProfileFromAuthUser(user, row)
   }
 
   return (
