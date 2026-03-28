@@ -1,5 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { SUBSCRIPTION_ACCESS_STATUSES } from '@/lib/subscription-access'
 import type { Profile } from '@/types'
 
 export async function getAuthUser() {
@@ -41,7 +42,9 @@ export async function getActiveSubscription(userId: string) {
     .from('subscriptions')
     .select('*, charity:charities(*)')
     .eq('user_id', userId)
-    .eq('status', 'active')
-    .single()
+    .in('status', [...SUBSCRIPTION_ACCESS_STATUSES])
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .maybeSingle()
   return data
 }

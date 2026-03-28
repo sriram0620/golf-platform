@@ -78,7 +78,7 @@ create table subscriptions (
   plan subscription_plan not null,
   status subscription_status not null default 'inactive',
   amount numeric(10,2) not null,
-  charity_id uuid references charities(id) on set null,
+  charity_id uuid references charities(id) on delete set null,
   charity_percentage numeric(5,2) not null default 10.00,
   current_period_start timestamptz,
   current_period_end timestamptz,

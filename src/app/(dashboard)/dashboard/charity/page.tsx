@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button'
 import { Heart, CheckCircle2, ExternalLink } from 'lucide-react'
 import { formatPounds } from '@/lib/utils'
 import toast from 'react-hot-toast'
+import { hasSubscriptionAccess } from '@/lib/subscription-access'
 import type { Charity, Subscription } from '@/types'
 
 export default function CharityPage() {
@@ -18,8 +19,8 @@ export default function CharityPage() {
   useEffect(() => {
     const load = async () => {
       const [subRes, charRes] = await Promise.all([
-        fetch('/api/subscriptions'),
-        fetch('/api/charities'),
+        fetch('/api/subscriptions', { cache: 'no-store', credentials: 'include' }),
+        fetch('/api/charities', { cache: 'no-store', credentials: 'include' }),
       ])
       const subJson = await subRes.json()
       const charJson = await charRes.json()
@@ -40,6 +41,7 @@ export default function CharityPage() {
       const res = await fetch('/api/subscriptions/charity', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({ charity_id: selected, charity_percentage: percentage }),
       })
       const json = await res.json()
@@ -59,7 +61,7 @@ export default function CharityPage() {
     )
   }
 
-  if (!subscription || subscription.status !== 'active') {
+  if (!subscription || !hasSubscriptionAccess(subscription.status)) {
     return (
       <div className="glass rounded-2xl p-12 text-center">
         <Heart className="h-12 w-12 text-slate-600 mx-auto mb-3" />

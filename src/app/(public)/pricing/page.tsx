@@ -1,6 +1,7 @@
+import { createClient } from '@/lib/supabase/server'
 import Link from 'next/link'
-import { Button } from '@/components/ui/button'
 import { CheckCircle2, Trophy, Heart, Target, Zap } from 'lucide-react'
+import { SubscribeButton } from '@/components/public/subscribe-button'
 
 const features = [
   'Monthly draw entries',
@@ -11,7 +12,11 @@ const features = [
   'Mobile-friendly dashboard',
 ]
 
-export default function PricingPage() {
+export default async function PricingPage() {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  const isLoggedIn = !!user
+
   return (
     <div className="max-w-5xl mx-auto px-4 py-20">
       <div className="text-center mb-16">
@@ -27,16 +32,21 @@ export default function PricingPage() {
           <div className="mb-6">
             <h2 className="text-xl font-bold text-white mb-1">Monthly</h2>
             <p className="text-slate-500 text-sm">Flexible, cancel anytime</p>
+            <div className="mt-2 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-bold">
+              ✦ 45 DAYS FREE TRIAL
+            </div>
           </div>
           <div className="mb-8">
             <span className="text-5xl font-black text-white">£19.99</span>
             <span className="text-slate-400 ml-2">/month</span>
           </div>
-          <Link href="/signup?plan=monthly">
-            <Button variant="outline" size="lg" className="w-full mb-6">
-              Get started
-            </Button>
-          </Link>
+          <SubscribeButton 
+            plan="monthly" 
+            isLoggedIn={isLoggedIn}
+            className="w-full mb-6 border border-white/10 hover:border-white/20 hover:bg-white/5 text-slate-300 hover:text-white"
+          >
+            Get started
+          </SubscribeButton>
           <ul className="space-y-3">
             {features.map((f) => (
               <li key={f} className="flex items-center gap-2.5 text-sm text-slate-300">
@@ -57,17 +67,22 @@ export default function PricingPage() {
           <div className="mb-6">
             <h2 className="text-xl font-bold text-white mb-1">Yearly</h2>
             <p className="text-emerald-400 text-sm font-medium">Save £39.99 per year</p>
+            <div className="mt-2 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-bold">
+              ✦ 45 DAYS FREE TRIAL
+            </div>
           </div>
           <div className="mb-8">
             <span className="text-5xl font-black text-white">£199.88</span>
             <span className="text-slate-400 ml-2">/year</span>
             <p className="text-sm text-slate-500 mt-1">£16.66 per month billed annually</p>
           </div>
-          <Link href="/signup?plan=yearly">
-            <Button size="lg" className="w-full mb-6">
-              Get started
-            </Button>
-          </Link>
+          <SubscribeButton 
+            plan="yearly" 
+            isLoggedIn={isLoggedIn}
+            className="w-full mb-6 bg-emerald-500 hover:bg-emerald-400 text-black shadow-[0_0_20px_rgba(52,211,153,0.3)] hover:shadow-[0_0_30px_rgba(52,211,153,0.4)]"
+          >
+            Get started
+          </SubscribeButton>
           <ul className="space-y-3">
             {features.map((f) => (
               <li key={f} className="flex items-center gap-2.5 text-sm text-slate-300">

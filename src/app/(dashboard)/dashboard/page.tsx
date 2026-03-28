@@ -1,6 +1,12 @@
 import { createClient } from '@/lib/supabase/server'
-import { createAdminClient } from '@/lib/supabase/admin'
+import {
+  getAccessibleSubscriptionForUser,
+  getGolfScoresForUser,
+  getWinnersForUser,
+  getUnreadNotificationsForUser,
+} from '@/lib/supabase/user-scoped-queries'
 import { redirect } from 'next/navigation'
+import { hasSubscriptionAccess } from '@/lib/subscription-access'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -11,27 +17,32 @@ import {
   ArrowRight, AlertCircle, CheckCircle2, Plus
 } from 'lucide-react'
 
+export const dynamic = 'force-dynamic'
+
 export default async function DashboardPage() {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 
-  const admin = createAdminClient()
-
   const [
-    { data: subscription },
-    { data: scores },
-    { data: winners },
-    { data: notifications },
+    { data: subscription, error: subscriptionError },
+    { data: scores, error: scoresError },
+    { data: winners, error: winnersError },
+    { data: notifications, error: notificationsError },
   ] = await Promise.all([
-    admin.from('subscriptions').select('*, charity:charities(id,name,slug)').eq('user_id', user.id).order('created_at', { ascending: false }).limit(1).single(),
-    admin.from('golf_scores').select('*').eq('user_id', user.id).order('played_date', { ascending: false }).limit(5),
-    admin.from('winners').select('*, draw:draws(name,draw_month,draw_year)').eq('user_id', user.id).order('created_at', { ascending: false }).limit(3),
-    admin.from('notifications').select('*').eq('user_id', user.id).eq('is_read', false).order('created_at', { ascending: false }).limit(5),
+    getAccessibleSubscriptionForUser(user.id),
+    getGolfScoresForUser(user.id, 5),
+    getWinnersForUser(user.id, 3),
+    getUnreadNotificationsForUser(user.id, 5),
   ])
 
+  if (subscriptionError) console.error('Dashboard subscription load:', subscriptionError)
+  if (scoresError) console.error('Dashboard scores load:', scoresError)
+  if (winnersError) console.error('Dashboard winners load:', winnersError)
+  if (notificationsError) console.error('Dashboard notifications load:', notificationsError)
+
   const totalWon = (winners ?? []).reduce((sum, w) => sum + w.prize_amount, 0)
-  const isActive = subscription?.status === 'active'
+  const isActive = hasSubscriptionAccess(subscription?.status)
 
   return (
     <div className="space-y-8">
@@ -85,7 +96,13 @@ export default async function DashboardPage() {
       <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard
           title="Subscription"
-          value={isActive ? 'Active' : 'Inactive'}
+          value={
+            !isActive
+              ? 'Inactive'
+              : subscription?.status === 'trialing'
+                ? 'Trial'
+                : 'Active'
+          }
           icon={CreditCard}
           color={isActive ? 'emerald' : 'amber'}
           trend={subscription?.current_period_end ? `Renews ${formatDate(subscription.current_period_end)}` : undefined}

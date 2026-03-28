@@ -21,12 +21,23 @@ async function getHomePageData() {
     stats: stats?.[0] ?? { total_prize_pool: 0, total_charity_contributions: 0 }
   }
 }
+import { createClient } from '@/lib/supabase/server'
+import { Navbar } from '@/components/layout/navbar'
 
 export default async function HomePage() {
   const { featuredCharities, stats } = await getHomePageData()
+  
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  let profile = null
+  if (user) {
+    const { data } = await supabase.from('profiles').select('*').eq('id', user.id).single()
+    profile = data || { id: user.id, email: user.email, full_name: user.email?.split('@')[0] }
+  }
 
   return (
     <div className="flex flex-col min-h-screen">
+      <Navbar profile={profile} />
       {/* Hero Section */}
       <section className="relative px-4 pt-32 pb-20 sm:pt-40 sm:pb-24 lg:pb-32 overflow-hidden flex-1 flex flex-col justify-center">
         {/* Abstract background blobs */}

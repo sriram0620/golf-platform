@@ -20,7 +20,7 @@ export async function GET() {
       { data: monthlySignups },
     ] = await Promise.all([
       supabase.from('profiles').select('id', { count: 'exact', head: true }),
-      supabase.from('subscriptions').select('id', { count: 'exact', head: true }).eq('status', 'active'),
+      supabase.from('subscriptions').select('id', { count: 'exact', head: true }).in('status', ['active', 'trialing']),
       supabase.from('draws').select('total_pool').eq('status', 'published'),
       supabase.from('charity_contributions').select('amount'),
       supabase.from('draws').select('id', { count: 'exact', head: true }),

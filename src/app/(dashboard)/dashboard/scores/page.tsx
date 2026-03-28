@@ -33,7 +33,7 @@ export default function ScoresPage() {
   })
 
   const loadScores = async () => {
-    const res = await fetch('/api/scores')
+    const res = await fetch('/api/scores', { cache: 'no-store', credentials: 'include' })
     const json = await res.json()
     setScores(json.data?.scores ?? [])
     setLoading(false)
@@ -61,6 +61,7 @@ export default function ScoresPage() {
       const res = await fetch(url, {
         method,
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify(data),
       })
       const json = await res.json()
@@ -75,7 +76,7 @@ export default function ScoresPage() {
 
   const deleteScore = async (id: string) => {
     if (!confirm('Delete this score?')) return
-    const res = await fetch(`/api/scores/${id}`, { method: 'DELETE' })
+    const res = await fetch(`/api/scores/${id}`, { method: 'DELETE', credentials: 'include' })
     if (res.ok) { toast.success('Score deleted'); loadScores() }
     else toast.error('Failed to delete score')
   }
@@ -198,7 +199,7 @@ export default function ScoresPage() {
             max={45}
             placeholder="e.g. 32"
             error={errors.score?.message}
-            {...register('score')}
+            {...register('score', { valueAsNumber: true })}
           />
           <Input
             label="Date played"

@@ -3,6 +3,8 @@ import { redirect } from 'next/navigation'
 import { Navbar } from '@/components/layout/navbar'
 import { DashboardSidebar } from '@/components/layout/dashboard-sidebar'
 
+export const dynamic = 'force-dynamic'
+
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()

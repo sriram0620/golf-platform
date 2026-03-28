@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { ok, badRequest, unauthorized, notFound, serverError } from '@/lib/api-response'
+import { SUBSCRIPTION_ACCESS_STATUSES } from '@/lib/subscription-access'
 import { z } from 'zod'
 
 const schema = z.object({
@@ -19,13 +20,19 @@ export async function PATCH(request: Request) {
     if (!parsed.success) return badRequest(parsed.error.issues[0].message)
 
     const admin = createAdminClient()
-    const { data: subscription } = await admin
+    const { data: subscription, error: findError } = await admin
       .from('subscriptions')
       .select('id')
       .eq('user_id', user.id)
-      .eq('status', 'active')
-      .single()
+      .in('status', [...SUBSCRIPTION_ACCESS_STATUSES])
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle()
 
+    if (findError) {
+      console.error('PATCH /api/subscriptions/charity find:', findError)
+      return serverError()
+    }
     if (!subscription) return notFound('No active subscription')
 
     const { data: updated, error } = await admin

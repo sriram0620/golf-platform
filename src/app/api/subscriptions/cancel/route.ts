@@ -2,6 +2,7 @@ import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { stripe } from '@/lib/stripe'
 import { ok, badRequest, unauthorized, notFound, serverError } from '@/lib/api-response'
+import { SUBSCRIPTION_ACCESS_STATUSES } from '@/lib/subscription-access'
 
 export async function POST() {
   try {
@@ -10,19 +11,30 @@ export async function POST() {
     if (!user) return unauthorized()
 
     const admin = createAdminClient()
-    const { data: subscription } = await admin
+    const { data: subscription, error: findError } = await admin
       .from('subscriptions')
       .select('*')
       .eq('user_id', user.id)
-      .eq('status', 'active')
-      .single()
+      .in('status', [...SUBSCRIPTION_ACCESS_STATUSES])
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle()
 
+    if (findError) {
+      console.error('POST /api/subscriptions/cancel find:', findError)
+      return serverError()
+    }
     if (!subscription) return notFound('No active subscription')
 
     if (subscription.stripe_subscription_id) {
-      await stripe.subscriptions.update(subscription.stripe_subscription_id, {
-        cancel_at_period_end: true,
-      })
+      try {
+        await stripe.subscriptions.update(subscription.stripe_subscription_id, {
+          cancel_at_period_end: true,
+        })
+      } catch (e) {
+        console.error('Stripe cancel_at_period_end:', e)
+        return badRequest('Unable to update billing. Try again or contact support.')
+      }
     }
 
     const { data: updated, error } = await admin

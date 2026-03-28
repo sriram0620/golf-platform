@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 import { ok, noContent, badRequest, unauthorized, notFound, serverError } from '@/lib/api-response'
 import { z } from 'zod'
 
@@ -22,7 +23,8 @@ export async function PATCH(
     const parsed = updateSchema.safeParse(body)
     if (!parsed.success) return badRequest(parsed.error.issues[0].message)
 
-    const { data, error } = await supabase
+    const admin = createAdminClient()
+    const { data, error } = await admin
       .from('golf_scores')
       .update(parsed.data)
       .eq('id', id)
@@ -30,10 +32,14 @@ export async function PATCH(
       .select()
       .single()
 
-    if (error) throw error
+    if (error) {
+      console.error('PATCH /api/scores/[id]:', error)
+      return serverError()
+    }
     if (!data) return notFound('Score not found')
     return ok({ score: data })
-  } catch {
+  } catch (e) {
+    console.error('PATCH /api/scores/[id]:', e)
     return serverError()
   }
 }
@@ -48,15 +54,20 @@ export async function DELETE(
     if (!user) return unauthorized()
 
     const { id } = await params
-    const { error } = await supabase
+    const admin = createAdminClient()
+    const { error } = await admin
       .from('golf_scores')
       .delete()
       .eq('id', id)
       .eq('user_id', user.id)
 
-    if (error) throw error
+    if (error) {
+      console.error('DELETE /api/scores/[id]:', error)
+      return serverError()
+    }
     return noContent()
-  } catch {
+  } catch (e) {
+    console.error('DELETE /api/scores/[id]:', e)
     return serverError()
   }
 }

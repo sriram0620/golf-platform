@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge'
 import { formatDate, formatPounds } from '@/lib/utils'
 import { Settings, User, CreditCard, AlertTriangle } from 'lucide-react'
 import toast from 'react-hot-toast'
+import { hasSubscriptionAccess } from '@/lib/subscription-access'
 import type { Profile, Subscription } from '@/types'
 
 export default function SettingsPage() {
@@ -21,8 +22,8 @@ export default function SettingsPage() {
   useEffect(() => {
     const load = async () => {
       const [meRes, subRes] = await Promise.all([
-        fetch('/api/auth/me'),
-        fetch('/api/subscriptions'),
+        fetch('/api/auth/me', { cache: 'no-store', credentials: 'include' }),
+        fetch('/api/subscriptions', { cache: 'no-store', credentials: 'include' }),
       ])
       const meJson = await meRes.json()
       const subJson = await subRes.json()
@@ -157,7 +158,7 @@ export default function SettingsPage() {
               )}
             </div>
 
-            {subscription.status === 'active' && (
+            {hasSubscriptionAccess(subscription.status) && (
               <div className="pt-4 border-t border-white/5">
                 <Button variant="danger" onClick={cancelSub} loading={cancelling} size="sm">
                   <AlertTriangle className="h-4 w-4" /> Cancel subscription

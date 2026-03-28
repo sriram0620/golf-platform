@@ -40,11 +40,11 @@ export async function POST(request: Request) {
 
     const supabase = createAdminClient()
 
-    // Calculate prize pool from active subscriptions
+    // Calculate prize pool from paying / trialing subscribers
     const { count: activeSubscribers } = await supabase
       .from('subscriptions')
       .select('id', { count: 'exact' })
-      .eq('status', 'active')
+      .in('status', ['active', 'trialing'])
 
     const monthlyEquivalent = 19.99
     const totalPool = (activeSubscribers ?? 0) * monthlyEquivalent * 0.6
